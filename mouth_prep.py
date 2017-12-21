@@ -5,34 +5,19 @@ import numpy as np
 
 MOUTHING_DATA_DIR = 'phoenix-mouthing-ECCV'
 
-class ReversibleDict(dict):
+class LabelMap(dict):
     def __init__(self, *args):
         dict.__init__(self, *args)
-        self.rev = dict()
-        for k, v in self.items():
-            if v in self.rev:
-                raise ValueError('Repeated value not allowed: "{}"'.format(v))
-            self.rev[v] = k
-
-    def __setitem__(self, key, value):
-        dict.__setitem__(self, key, value)
-        self.rev[value] = key
-
-class LabelMap(ReversibleDict):
-    def __init__(self, *args):
-        ReversibleDict.__init__(self, *args)
         with open(MOUTHING_DATA_DIR + '/annotations/label-id') as map_file:
             for line in map_file.read().splitlines():
                 id, label = line.split(' ')
-                self[int(id)] = label
-
-label_map = LabelMap()
+                self[label] = int(id)
 
 def load_image_input(paths):
     img_arrays = [img_to_array(load_img(MOUTHING_DATA_DIR + path[2:], target_size=(224,224))) for path in paths]
     return preprocess_input(np.array(img_arrays))
 
-def mouthing_data(limit=None, spread_labels=True):
+def mouthing_data(limit=None):
     with open(MOUTHING_DATA_DIR + '/annotations/mouthing.annotations') as annotations_file:
         lines = annotations_file.read().splitlines()
         items = []
@@ -54,9 +39,10 @@ def resnet_convert(paths):
     return resnet.predict(images).reshape((len(images), 2048))
 
 def mouthing_data_resnet():
-    paths_data = mouthing_data()
+    paths_data = mouthing_data(20)
     paths = (path for path, lalbel in paths_data)
-    labels = [label_map.rev[label] for path, label in paths_data]
+    label_map = LabelMap()
+    labels = [label_map[label] for path, label in paths_data]
 
     resnet_data = resnet_convert(paths)
     # Add label item to each image resnet vector.
