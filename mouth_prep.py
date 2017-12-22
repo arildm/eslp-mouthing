@@ -2,6 +2,7 @@ from keras.applications.imagenet_utils import preprocess_input
 from keras.applications.resnet50 import ResNet50
 from keras.preprocessing.image import load_img, img_to_array
 import numpy as np
+import sys
 
 MOUTHING_DATA_DIR = 'phoenix-mouthing-ECCV'
 
@@ -26,7 +27,7 @@ def mouthing_data(limit=None):
             labels = labels_all.split('-')
             items.append((path, labels[0]))
             # Break at limit.
-            if limit is not None and len(items) >= limit:
+            if limit is not None and len(items) >= int(limit):
                 break
     return items
 
@@ -38,8 +39,8 @@ def resnet_convert(paths):
     print('Processing images through ResNet50')
     return resnet.predict(images).reshape((len(images), 2048))
 
-def mouthing_data_resnet():
-    paths_data = mouthing_data(20)
+def mouthing_data_resnet(limit=None):
+    paths_data = mouthing_data(limit)
     paths = (path for path, lalbel in paths_data)
     label_map = LabelMap()
     labels = [label_map[label] for path, label in paths_data]
@@ -51,4 +52,5 @@ def mouthing_data_resnet():
     print('Saving data of shape {} to {}'.format(cat_data.shape, save_filename))
     np.save(save_filename, cat_data)
 
-mouthing_data_resnet()
+if __name__ == '__main__':
+    mouthing_data_resnet(*sys.argv[1:])
