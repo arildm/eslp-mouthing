@@ -8,14 +8,6 @@ import numpy as np
 
 MOUTHING_DATA_DIR = 'phoenix-mouthing-ECCV'
 
-class LabelMap(dict):
-    def __init__(self, *args):
-        dict.__init__(self, *args)
-        with open(MOUTHING_DATA_DIR + '/annotations/label-id') as map_file:
-            for line in map_file.read().splitlines():
-                id, label = line.split(' ')
-                self[label] = int(id)
-
 def load_image_input(paths):
     img_arrays = [img_to_array(load_img(MOUTHING_DATA_DIR + path[2:], target_size=(224,224))) for path in paths]
     return preprocess_input(np.array(img_arrays))
