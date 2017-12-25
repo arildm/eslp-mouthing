@@ -1,3 +1,4 @@
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.layers.core import Activation, Dense, Reshape
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential
@@ -33,8 +34,11 @@ def train_evaluate_model():
     mouth_annotations = np.array(data.annotation_vectors()[1:])
 
     # Train and save model.
-    model.fit(frames_data_bigrams, mouth_annotations)
-    model.save('mouthing-model.h5')
+    model.fit(frames_data_bigrams, mouth_annotations, callbacks=[
+        ModelCheckpoint('mouthing-model-{epoch:02d}.hdf5', save_best_only=True),
+        EarlyStopping(patience=5),
+    ])
+    model.save('mouthing-model.hdf5')
 
 if __name__ == '__main__':
     train_evaluate_model()
