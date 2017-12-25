@@ -21,14 +21,16 @@ def create_model():
 
 def train_evaluate_model():
     """Trains and saves a model."""
+    data = mouth_data.MouthData()
+
     model = create_model()
 
     # Load frames data and convert to bigrams.
-    frames_data = mouth_data.read_frames_data()
+    frames_data = data.frames_resnet()
     frames_data_bigrams = np.array(list(nltk.bigrams(frames_data)))
 
     # Load annotations; skip first annotation because input is bigrams.
-    mouth_annotations = np.array(mouth_data.load_mouth_annotations()[1:])
+    mouth_annotations = np.array(data.annotation_vectors()[1:])
 
     # Train and save model.
     model.fit(frames_data_bigrams, mouth_annotations)
