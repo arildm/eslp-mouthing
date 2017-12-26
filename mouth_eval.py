@@ -1,8 +1,6 @@
 from argparse import ArgumentParser
 
 from keras.models import load_model
-import numpy as np
-import sys
 
 from mouth_data import MouthData
 
@@ -17,13 +15,12 @@ if __name__ == '__main__':
     data = MouthData()
     frames_data_bigrams = data.frames_resnet_bigrams()
 
+    print('Classifying')
+    prediction = model.predict(frames_data_bigrams, verbose=1)
+    predicted_labels = (data.vector_to_label(vector) for vector in prediction)
+
     hypotheses_filename = 'hypotheses.txt'
-    print('Classifying, saving results to {}'.format(hypotheses_filename))
+    print('\nSaving results to {}'.format(hypotheses_filename))
     with open(hypotheses_filename, 'w') as hypotheses_file:
-        for i in range(len(data)):
-            prediction = model.predict(np.array([frames_data_bigrams[i]]))
-            label = data.vector_to_label(prediction)
-            path = data.paths[i]
-            sys.stdout.write(label + ' ')
+        for path, label in zip(data.paths, predicted_labels):
             hypotheses_file.write('{} {}\n'.format(path, label))
-    print()

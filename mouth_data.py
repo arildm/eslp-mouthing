@@ -95,3 +95,6 @@ class MouthData:
         return [sum(self.label_to_onehot(label) for label in labels) / len(labels)
             for path, labels in self.annotations]
 
+if __name__ == '__main__':
+    data = MouthData()
+    data.frames_resnet()
