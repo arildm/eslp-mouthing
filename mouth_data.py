@@ -37,16 +37,15 @@ class ResNet50Data:
         return resnet_data
 
 class MouthData:
+    """Contains frames input and labels in Keras-friendly formats."""
     def __init__(self, data_dir='phoenix-mouthing-ECCV', limit=None):
         self.data_dir = data_dir
-        self.load_annotations(limit)
-        self.load_label_map()
 
-    def load_annotations(self, limit=None):
+        # Load annotations.
+        self.annotations = []
+        self.paths = []
         with open(self.data_dir + '/annotations/mouthing.annotations') as annotations_file:
             lines = annotations_file.read().splitlines()
-            self.annotations = []
-            self.paths = []
             for line in lines:
                 path, labels_all = line.split(' ')
                 labels = labels_all.split('-')
@@ -56,8 +55,7 @@ class MouthData:
                 if limit is not None and len(self.paths) >= int(limit):
                     break
 
-    def load_label_map(self):
-        """Loads labels as a map to ids."""
+        # Load label/id mapping.
         self.id_map = dict()
         with open(self.data_dir + '/annotations/label-id') as map_file:
             for line in map_file.read().splitlines():
@@ -65,16 +63,18 @@ class MouthData:
                 # Their ids in the file are 1-indexed. Switch to 0-indexed
                 # by subtracting 1, so our id = index.
                 self.id_map[label] = int(id) - 1
+
+        # Create list of one-hot vectors (as a list, it "maps" ids to vectors).
         self.label_onehots = to_categorical(sorted(self.id_map.values()))
 
     def frames_resnet(self):
+        """Get ResNet50 representations of frame images."""
         rel_paths = (self.data_dir + path[2:] for path in self.paths)
         resnet_data = ResNet50Data(rel_paths)
         return resnet_data.lazyload('mouthing-frames-resnet.npy')
 
     def annotation_vectors(self):
         """Loads annotations as vectors."""
-        self.load_label_map()
         return [sum(self.label_onehots[self.id_map[label]] for label in labels) / len(labels)
             for path, labels in self.annotations]
 

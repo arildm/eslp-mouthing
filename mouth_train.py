@@ -21,27 +21,29 @@ def create_model():
     return model
 
 def train_evaluate_model():
-    """Trains and saves a model."""
+    """Trains and saves a NN model."""
     # @todo We are ignoring that frames are taken from multiple clips.
     data = mouth_data.MouthData()
-
-    model = create_model()
 
     # Load frames data and convert to bigrams.
     frames_data = data.frames_resnet()
     # Duplicate first element to provide a dummy bigram for the first sample.
-    frames_data = [frames_data[0]] + frames_data.tolist()
+    print('Making bigrams')
+    frames_data = np.insert(frames_data, 0, frames_data[0], axis=0)
     frames_data_bigrams = np.array(list(nltk.bigrams(frames_data)))
 
     # Load annotations.
+    print('Loading annotations')
     mouth_annotations = np.array(data.annotation_vectors())
 
-    # Train and save model.
+    # Train model.
+    print('Creating NN model')
+    model = create_model()
+    print('Begin training')
     model.fit(frames_data_bigrams, mouth_annotations, epochs=100, callbacks=[
         ModelCheckpoint('mouthing-model-{epoch:02d}.hdf5', 'loss', save_best_only=True),
         EarlyStopping('loss', patience=5),
     ])
-    model.save('mouthing-model.hdf5')
 
 if __name__ == '__main__':
     train_evaluate_model()
