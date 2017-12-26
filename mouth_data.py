@@ -5,7 +5,9 @@ from keras.applications.resnet50 import ResNet50
 from keras.engine.training import Model
 from keras.preprocessing.image import load_img, img_to_array
 from keras.utils.np_utils import to_categorical
+from nltk import bigrams
 import numpy as np
+from numpy.ma.core import argmax
 
 class ResNet50Data:
     def __init__(self, image_paths):
@@ -67,14 +69,29 @@ class MouthData:
         # Create list of one-hot vectors (as a list, it "maps" ids to vectors).
         self.label_onehots = to_categorical(sorted(self.id_map.values()))
 
+    def __len__(self):
+        return len(self.paths)
+
     def frames_resnet(self):
         """Get ResNet50 representations of frame images."""
         rel_paths = (self.data_dir + path[2:] for path in self.paths)
         resnet_data = ResNet50Data(rel_paths)
         return resnet_data.lazyload('mouthing-frames-resnet.npy')
 
+    def frames_resnet_bigrams(self):
+        frames_data = self.frames_resnet()
+        # Duplicate first element to provide dummy bigram for the first sample.
+        frames_data = np.insert(frames_data, 0, frames_data[0], axis=0)
+        return np.array(list(bigrams(frames_data)))
+
+    def label_to_onehot(self, label):
+        return self.label_onehots[self.id_map[label]]
+
+    def vector_to_label(self, vector):
+        return list(self.id_map.keys())[list(self.id_map.values()).index(argmax(vector))]
+
     def annotation_vectors(self):
         """Loads annotations as vectors."""
-        return [sum(self.label_onehots[self.id_map[label]] for label in labels) / len(labels)
+        return [sum(self.label_to_onehot(label) for label in labels) / len(labels)
             for path, labels in self.annotations]
 

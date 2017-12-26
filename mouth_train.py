@@ -2,7 +2,6 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.layers.core import Activation, Dense, Reshape
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential
-import nltk
 import numpy as np
 
 import mouth_data
@@ -25,12 +24,8 @@ def train_evaluate_model():
     # @todo We are ignoring that frames are taken from multiple clips.
     data = mouth_data.MouthData()
 
-    # Load frames data and convert to bigrams.
-    frames_data = data.frames_resnet()
-    # Duplicate first element to provide a dummy bigram for the first sample.
-    print('Making bigrams')
-    frames_data = np.insert(frames_data, 0, frames_data[0], axis=0)
-    frames_data_bigrams = np.array(list(nltk.bigrams(frames_data)))
+    # Load frames data as bigrams.
+    frames_data_bigrams = data.frames_resnet_bigrams()
 
     # Load annotations.
     print('Loading annotations')
