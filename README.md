@@ -28,4 +28,7 @@ Evaluate using Koller's eval script (Python 2).
     cd phoenix-mouthing-ECCV
     python2 evaluation/eval.py annotations/mouthing.annotations ../hypotheses.txt
 
+## Results
+
+    Precision: 38.6554621849 Recall: 2.48514316586 Evaluated 3687 frames
 
