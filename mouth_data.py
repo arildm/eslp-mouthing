@@ -10,16 +10,15 @@ import numpy as np
 from numpy.ma.core import argmax
 
 class ResNet50Data:
-    def __init__(self):
-        print('Loading ResNet50')
-        self.resnet = ResNet50(weights='imagenet', include_top=False)
-        # Discard last pooling & activation layer.
-        self.resnet = Model(self.resnet.inputs, self.resnet.layers[-2].output)
-
     def convert(self, paths):
         print('Loading images')
         img_arrays = [img_to_array(load_img(path, target_size=(224,224))) for path in paths]
         images = preprocess_input(np.array(img_arrays))
+
+        print('Loading ResNet50')
+        self.resnet = ResNet50(weights='imagenet', include_top=False)
+        # Discard last pooling & activation layer.
+        self.resnet = Model(self.resnet.inputs, self.resnet.layers[-2].output)
 
         print('Processing images through ResNet50')
         return self.resnet.predict(images)
