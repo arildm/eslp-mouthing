@@ -10,29 +10,27 @@ import numpy as np
 from numpy.ma.core import argmax
 
 class ResNet50Data:
-    def __init__(self, image_paths):
-        self.image_paths = image_paths
+    def __init__(self):
+        print('Loading ResNet50')
+        self.resnet = ResNet50(weights='imagenet', include_top=False)
+        # Discard last pooling & activation layer.
+        self.resnet = Model(self.resnet.inputs, self.resnet.layers[-2].output)
 
-    def convert(self):
+    def convert(self, paths):
         print('Loading images')
-        img_arrays = [img_to_array(load_img(path, target_size=(224,224))) for path in self.image_paths]
+        img_arrays = [img_to_array(load_img(path, target_size=(224,224))) for path in paths]
         images = preprocess_input(np.array(img_arrays))
 
-        print('Loading ResNet50')
-        resnet = ResNet50(weights='imagenet', include_top=False)
-        # Discard last pooling & activation layer.
-        resnet = Model(resnet.inputs, resnet.layers[-2].output)
-
         print('Processing images through ResNet50')
-        return resnet.predict(images)
+        return self.resnet.predict(images)
 
-    def lazyload(self, data_filename='resnet-data.npy'):
+    def lazyload(self, paths, data_filename='resnet-data.npy'):
         """Creates, or loads previously created, resnet-converted data."""
         if os.path.exists(data_filename):
             resnet_data = np.load(data_filename)
             print('Loaded data of shape {} from {}'.format(resnet_data.shape, data_filename))
         else:
-            resnet_data = self.convert()
+            resnet_data = self.convert(paths)
             print('Saving data of shape {} to {}'.format(resnet_data.shape, data_filename))
             np.save(data_filename, resnet_data)
 
@@ -57,6 +55,16 @@ class MouthData:
                 if limit is not None and len(self.paths) >= int(limit):
                     break
 
+        # Partition paths by sentence.
+        self.sentences = []
+        self.paths_by_sentence = dict()
+        for path in self.paths:
+            sentid = path.split('/')[-2]
+            if sentid not in self.sentences:
+                self.sentences.append(sentid)
+                self.paths_by_sentence[sentid] = []
+            self.paths_by_sentence[sentid].append(path)
+
         # Load label/id mapping.
         self.id_map = dict()
         with open(self.data_dir + '/annotations/label-id') as map_file:
@@ -75,10 +83,11 @@ class MouthData:
     def frames_resnet(self):
         """Get ResNet50 representations of frame images."""
         rel_paths = (self.data_dir + path[2:] for path in self.paths)
-        resnet_data = ResNet50Data(rel_paths)
-        return resnet_data.lazyload('mouthing-frames-resnet.npy')
+        resnet_data = ResNet50Data()
+        return resnet_data.lazyload(rel_paths)
 
     def frames_resnet_bigrams(self):
+        """Get ResNet50 representations of frames as bigrams."""
         frames_data = self.frames_resnet()
         # Duplicate first element to provide dummy bigram for the first sample.
         frames_data = np.insert(frames_data, 0, frames_data[0], axis=0)
@@ -95,6 +104,24 @@ class MouthData:
         return [sum(self.label_to_onehot(label) for label in labels) / len(labels)
             for path, labels in self.annotations]
 
+    def by_sentence(self, a, pad=156):
+        print('Converting data of shape {} by sentence'.format(a.shape))
+        shape = list(a.shape)
+        sents = []
+        i = 0
+        for sentid in self.sentences:
+            n = len(self.paths_by_sentence[sentid])
+            sent = a[i:i+n]
+            if pad:
+                # Initially, shape[0] is data length, but since we're adding a
+                # dimension, shape now has the dimensionality of each sentence,
+                # and shape[0] is sentence length. Or here, the padding width.
+                shape[0] = pad - n
+                sent = np.concatenate([sent, (np.zeros(tuple(shape)))])
+            sents.append(sent)
+            i += n
+        return np.array(sents)
+
 if __name__ == '__main__':
     data = MouthData()
-    data.frames_resnet()
+    frames_data = data.frames_resnet()
