@@ -13,7 +13,7 @@ def create_model():
     model = Sequential()
     # Flatten 3D to 1D but keep the bigram dimension.
     #model.add(Reshape((156, 7 * 7 * 2048), input_shape=(156, 7, 7, 2048)))
-    model.add(TimeDistributed(Lambda(lambda x: x[:,0:3,2:5]), input_shape=(156, 7, 7, 2048)))
+    model.add(TimeDistributed(Lambda(lambda x: x[:,2:5,0:3]), input_shape=(156, 7, 7, 2048)))
     model.add(TimeDistributed(Flatten()))
     model.add(LSTM(32, return_sequences=True))
     # Output layer the size of the number of labels.
@@ -47,7 +47,7 @@ def train_evaluate_model():
     print('Creating NN model')
     model = create_model()
     print('Begin training')
-    model.fit(x, y, epochs=100, callbacks=[
+    model.fit(x, y, epochs=100, batch_size= 4, callbacks=[
         ModelCheckpoint('mouthing-model-{epoch:02d}.hdf5', 'loss', save_best_only=True),
         EarlyStopping('loss', patience=5),
     ])
