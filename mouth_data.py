@@ -97,7 +97,7 @@ class MouthData:
 
     def vector_to_label(self, vector):
         # stochastic interpretation of probabilities 
-        # it takes a sample  with one run, but it can have mode
+        # it takes a sample  with one run, but it can have more
         vector = np.random.multinomial(1, vector).flatten()
         return list(self.id_map.keys())[list(self.id_map.values()).index(argmax(vector))]
 
