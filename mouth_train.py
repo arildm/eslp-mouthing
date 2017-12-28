@@ -1,8 +1,9 @@
 from keras.callbacks import ModelCheckpoint, EarlyStopping
-from keras.layers.core import Activation, Dense, Reshape
+from keras.layers.core import Activation, Dense, Reshape, Flatten, Lambda
 from keras.layers.recurrent import LSTM
 from keras.layers.wrappers import TimeDistributed
 from keras.models import Sequential
+from keras import backend as K
 import numpy as np
 
 import mouth_data
@@ -11,7 +12,9 @@ def create_model():
     """Creates an RNN model for sequential frame data input and label output."""
     model = Sequential()
     # Flatten 3D to 1D but keep the bigram dimension.
-    model.add(Reshape((156, 7 * 7 * 2048), input_shape=(156, 7, 7, 2048)))
+    #model.add(Reshape((156, 7 * 7 * 2048), input_shape=(156, 7, 7, 2048)))
+    model.add(TimeDistributed(Lambda(lambda x: x[:,0:3,2:5]), input_shape=(156, 7, 7, 2048)))
+    model.add(TimeDistributed(Flatten()))
     model.add(LSTM(32, return_sequences=True))
     # Output layer the size of the number of labels.
     model.add(TimeDistributed(Dense(40)))
