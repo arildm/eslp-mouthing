@@ -35,7 +35,7 @@ class ResNet50Data:
             images = preprocess_input(np.array(img_arrays))
 
             print('Processing images through ResNet50')
-            np.save(data_filename.format(index), self.resnet.predict(images))
+            np.save(data_filename.format(len(paths)), self.resnet.predict(images))
             #results.append(self.resnet.predict(images))
             
         return #np.concatenate(results)
