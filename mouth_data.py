@@ -43,16 +43,14 @@ class MouthData:
         # Load annotations.
         self.annotations = []
         self.paths = []
-        with open(self.data_dir + '/annotations/mouthing.annotations') as annotations_file:
-            lines = annotations_file.read().splitlines()
-            for line in lines:
-                path, labels_all = line.split(' ')
-                labels = labels_all.split('-')
-                self.paths.append(path)
-                self.annotations.append((path, labels))
-                # Break at limit.
-                if limit is not None and len(self.paths) >= int(limit):
-                    break
+        for line in open(self.data_dir + '/annotations/mouthing.annotations'):
+            path, labels_all = line.split(' ')
+            labels = labels_all.split('-')
+            self.paths.append(path)
+            self.annotations.append((path, labels))
+            # Break at limit.
+            if limit is not None and len(self.paths) >= int(limit):
+                break
 
         # Partition paths by sentence.
         self.sentences = []
@@ -66,12 +64,11 @@ class MouthData:
 
         # Load label/id mapping.
         self.id_map = dict()
-        with open(self.data_dir + '/annotations/label-id') as map_file:
-            for line in map_file.read().splitlines():
-                id, label = line.split(' ')
-                # Their ids in the file are 1-indexed. Switch to 0-indexed
-                # by subtracting 1, so our id = index.
-                self.id_map[label] = int(id) - 1
+        for line in open(self.data_dir + '/annotations/label-id'):
+            id, label = line.split(' ')
+            # Their ids in the file are 1-indexed. Switch to 0-indexed
+            # by subtracting 1, so our id = index.
+            self.id_map[label] = int(id) - 1
 
         # Create list of one-hot vectors (as a list, it "maps" ids to vectors).
         self.label_onehots = to_categorical(sorted(self.id_map.values()))
@@ -96,7 +93,7 @@ class MouthData:
         return self.label_onehots[self.id_map[label]]
 
     def vector_to_label(self, vector):
-        # stochastic interpretation of probabilities 
+        # stochastic interpretation of probabilities
         # it takes a sample  with one run, but it can have more
         #vector = np.random.multinomial(1, vector).flatten()
         return list(self.id_map.keys())[list(self.id_map.values()).index(argmax(vector))]
