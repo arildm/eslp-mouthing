@@ -10,28 +10,45 @@ import numpy as np
 from numpy.ma.core import argmax
 
 class ResNet50Data:
-    def convert(self, paths):
-        print('Loading images')
-        img_arrays = [img_to_array(load_img(path, target_size=(224,224))) for path in paths]
-        images = preprocess_input(np.array(img_arrays))
-
+    def convert(self, paths, data_filename):
         print('Loading ResNet50')
         self.resnet = ResNet50(weights='imagenet', include_top=False)
         # Discard last pooling & activation layer.
         self.resnet = Model(self.resnet.inputs, self.resnet.layers[-2].output)
 
-        print('Processing images through ResNet50')
-        return self.resnet.predict(images)
+        paths = list(paths)
+        print('Loading images from {0} paths'.format(len(paths)))
+        
+        #results = []
+        for index in range(2^14, len(paths), 2^14):
+            print('Loading images')
+            img_arrays = [img_to_array(load_img(path, target_size=(224,224))) for path in paths[:index]]
+            images = preprocess_input(np.array(img_arrays))
+            
+            print('Processing images through ResNet50')
+            np.save(data_filename.format(index), self.resnet.predict(images))
+            #results.append(self.resnet.predict(images))
+            
+        if len(paths[index:]>0):
+            print('Loading images')
+            img_arrays = [img_to_array(load_img(path, target_size=(224,224))) for path in paths[index:]]
+            images = preprocess_input(np.array(img_arrays))
 
-    def lazyload(self, paths, data_filename='resnet-data.npy'):
+            print('Processing images through ResNet50')
+            np.save(data_filename.format(index), self.resnet.predict(images))
+            #results.append(self.resnet.predict(images))
+            
+        return #np.concatenate(results)
+
+    def lazyload(self, paths, data_filename='resnet-data-{}.npy'):
         """Creates, or loads previously created, resnet-converted data."""
         if os.path.exists(data_filename):
             resnet_data = np.load(data_filename)
             print('Loaded data of shape {} from {}'.format(resnet_data.shape, data_filename))
         else:
-            resnet_data = self.convert(paths)
-            print('Saving data of shape {} to {}'.format(resnet_data.shape, data_filename))
-            np.save(data_filename, resnet_data)
+            resnet_data = self.convert(paths, data_filename)
+            #print('Saving data of shape {} to {}'.format(resnet_data.shape, data_filename))
+            #np.save(data_filename, resnet_data)
 
         return resnet_data
 
@@ -43,7 +60,7 @@ class MouthData:
         # Load annotations.
         self.annotations = []
         self.paths = []
-        with open(self.data_dir + '/annotations/mouthing.annotations') as annotations_file:
+        with open(self.data_dir + '/annotations/mouthing.annotations2') as annotations_file:
             lines = annotations_file.read().splitlines()
             for line in lines:
                 path, labels_all = line.split(' ')
