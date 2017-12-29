@@ -29,7 +29,7 @@ class ResNet50Data:
             np.save(data_filename.format(index), self.resnet.predict(images))
             #results.append(self.resnet.predict(images))
             
-        if len(paths[index:]>0):
+        if len(paths[index:])>0:
             print('Loading images')
             img_arrays = [img_to_array(load_img(path, target_size=(224,224))) for path in paths[index:]]
             images = preprocess_input(np.array(img_arrays))
