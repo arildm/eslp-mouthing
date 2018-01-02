@@ -86,6 +86,26 @@ class MouthData:
     def __len__(self):
         return len(self.paths)
 
+    def load_images(self, paths):
+        img_arrays = [img_to_array(load_img(path, target_size=(224,224))) for path in paths]
+        return preprocess_input(np.array(img_arrays))
+
+    def frames(self):
+        """Keras-ready image data for all frames."""
+        rel_paths = (self.data_dir + path[2:] for path in self.paths)
+        return self.load_images(rel_paths)
+
+    def frames_by_sentence(self):
+        """Keras-ready image data for frames by sentence."""
+        # More memory-friendly than self.by_sentence(self.frames()).
+        for sentid, paths in self.paths_by_sentence.items():
+            rel_paths = (self.data_dir + path[2:] for path in paths)
+            image_data = self.load_images(rel_paths)
+            # Pad to 156 (longest sentence).
+            padshape = tuple([156 - len(image_data)] + list(image_data.shape)[1:])
+            sent = np.concatenate([image_data, (np.zeros(tuple(padshape)))])
+            yield np.array(sent)
+
     def frames_resnet(self):
         """Get ResNet50 representations of frame images."""
         rel_paths = (self.data_dir + path[2:] for path in self.paths)
@@ -141,10 +161,13 @@ class MouthData:
         vectors = self.by_sentence(np.array(self.annotation_vectors()))
         while True:
             # mini_batch = ([], []) # X, Y
-            images = self.by_sentence(self.frames_resnet())
-            for sentid in self.paths_by_sentence:
-                idg_batch = image_data_generator.flow(images[sentid], vectors[sentid], batch_size=batch_size)
-                yield idg_batch
+            images = self.frames_by_sentence()
+            for x, y in zip(images, vectors):
+                idg_batch = image_data_generator.flow(x, y, batch_size=156)
+                # In ImageDataGenerator each item is an image. In our own model,
+                # each item is a sentence (156 images).
+                yield (np.array([x for x, y in idg_batch]),
+                    np.array([y for x, y in idg_batch]))
                 #initialise x, y
                 # for i, (idg_x, idg_y) in enumerate(zip(*idg_batch)):
                     # x.append(image)
