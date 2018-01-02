@@ -1,9 +1,10 @@
+from keras.applications.resnet50 import ResNet50
 from keras.callbacks import ModelCheckpoint, EarlyStopping
-from keras.layers.core import Activation, Dense, Reshape, Flatten, Lambda
+from keras.engine.training import Model
+from keras.layers.core import Activation, Dense, Flatten
 from keras.layers.recurrent import LSTM
 from keras.layers.wrappers import TimeDistributed
 from keras.models import Sequential
-from keras import backend as K
 import numpy as np
 
 import mouth_data
@@ -11,18 +12,22 @@ import mouth_data
 def create_model():
     """Creates an RNN model for sequential frame data input and label output."""
     model = Sequential()
-    # Flatten 3D to 1D but keep the bigram dimension.
-    #model.add(Reshape((156, 7 * 7 * 2048), input_shape=(156, 7, 7, 2048)))
-    model.add(TimeDistributed(Lambda(lambda x: x[:,2:5,0:3]), input_shape=(156, 7, 7, 2048)))
+    # Start off with ResNet50. Remove last layer, to get 7x7x2048 output.
+    resnet = ResNet50(weights='imagenet', include_top=False)
+    model.add(TimeDistributed(Model(resnet.inputs, resnet.layers[-2].output), input_shape=(156, 224, 224, 3)))
+    # Flatten input for LSTM.
     model.add(TimeDistributed(Flatten()))
+    # LSTM helps with sequential data.
     model.add(LSTM(32, return_sequences=True))
     # Output layer the size of the number of labels.
     model.add(TimeDistributed(Dense(40)))
+    # Softmax and categorical cross entropy are good for classification.
     model.add(Activation('softmax'))
     model.compile('adam', 'categorical_crossentropy', ['accuracy'])
     model.summary()
     return model
 
+'''
 def get_data():
     """Prepares input and output data for training."""
     data = mouth_data.MouthData()
@@ -37,18 +42,23 @@ def get_data():
     y = data.by_sentence(mouth_annotations)
 
     return x, y
+'''
 
 def train_evaluate_model():
     """Trains and saves a NN model."""
     # Load data.
-    x, y = get_data()
+    print('Loading data')
+    data = mouth_data.MouthData()
 
     # Train model.
     print('Creating NN model')
     model = create_model()
     print('Begin training')
-    model.fit(x, y, epochs=100, batch_size= 4, callbacks=[
-        ModelCheckpoint('mouthing-model-{epoch:02d}.hdf5', 'loss', save_best_only=True),
+    batch_size = 5
+    model.fit_generator(data.data_generator(batch_size), len(data) / batch_size,
+        epochs=100, callbacks=[
+        ModelCheckpoint('mouthing-model-{epoch:02d}.hdf5', 'loss',
+            save_best_only=True),
         EarlyStopping('loss', patience=5),
     ])
 

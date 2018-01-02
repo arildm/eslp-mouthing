@@ -3,11 +3,13 @@ import os
 from keras.applications.imagenet_utils import preprocess_input
 from keras.applications.resnet50 import ResNet50
 from keras.engine.training import Model
-from keras.preprocessing.image import load_img, img_to_array
+from keras.preprocessing.image import ImageDataGenerator, load_img, \
+    img_to_array, NumpyArrayIterator
 from keras.utils.np_utils import to_categorical
 from nltk import bigrams
 import numpy as np
 from numpy.ma.core import argmax
+import sys
 
 class ResNet50Data:
     def convert(self, paths):
@@ -34,6 +36,11 @@ class ResNet50Data:
             np.save(data_filename, resnet_data)
 
         return resnet_data
+
+    def image_data_generator(self, x, y, *args):
+        gen = ImageDataGenerator(*args)
+        for item in gen.flow(x, y):
+            return item
 
 class MouthData:
     """Contains frames input and labels in Keras-friendly formats."""
@@ -92,6 +99,9 @@ class MouthData:
     def label_to_onehot(self, label):
         return self.label_onehots[self.id_map[label]]
 
+    def labels_to_vector(self, labels):
+        return sum(self.label_to_onehot(label) for label in labels) / len(labels)
+
     def vector_to_label(self, vector):
         # stochastic interpretation of probabilities
         # it takes a sample  with one run, but it can have more
@@ -100,7 +110,7 @@ class MouthData:
 
     def annotation_vectors(self):
         """Loads annotations as vectors."""
-        return [sum(self.label_to_onehot(label) for label in labels) / len(labels)
+        return [self.labels_to_vector(labels)
             for path, labels in self.annotations]
 
     def by_sentence(self, a, pad=156):
@@ -121,6 +131,50 @@ class MouthData:
             i += n
         return np.array(sents)
 
+    def data_generator(self, batch_size):
+        """Generates data indefinitely, with random variation of images."""
+        # todo Check IDG params.
+        image_data_generator = ImageDataGenerator(rotation_range=.05, zoom_range=.02, horizontal_flip=True)
+        vectors = self.by_sentence(np.array(self.annotation_vectors()))
+        while True:
+            # mini_batch = ([], []) # X, Y
+            images = self.by_sentence(self.frames_resnet())
+            for sentid in self.paths_by_sentence:
+                idg_batch = image_data_generator.flow(images[sentid], vectors[sentid], batch_size=batch_size)
+                yield idg_batch
+                #initialise x, y
+                # for i, (idg_x, idg_y) in enumerate(zip(*idg_batch)):
+                    # x.append(image)
+                    # y.append(self.labels_to_vector(labels))
+                    # pad x, y to get the max sentence size
+                    # mini_batch[0].append(x)
+                    # mini_batch[1].append(y)
+                    # if len(mini_batch[1]) == batch_size:
+                # maybe shuffle the minibatch but I don’t have shuffle in this code
+                # yield (np.concatenate(mini_batch[0]), np.concatenate(mini_batch[1]))
+                # mini_batch = ([], [])
+
+        # this is outside of all loops to empty the leftovers less in the mini_batch
+        # if len(mini_batch) > 0:
+        #     yield np.concatenate(mini_batch)
+
+'''
+class ImageDataResnetGenerator(ImageDataGenerator):
+    """An Image Data Generator that also runs images through ResNet."""
+
+    def __init__(self, model):
+        # self.image_data_generator = image_data_generator
+        self.model = model
+
+    def flow(self, *args):
+        it = super().flow(*args)
+        return ResnetIterator(it)
+
+class ResnetIterator(NumpyArrayIterator):
+    def
+
+
 if __name__ == '__main__':
     data = MouthData()
     frames_data = data.frames_resnet()
+'''
