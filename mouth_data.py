@@ -4,12 +4,11 @@ from keras.applications.imagenet_utils import preprocess_input
 from keras.applications.resnet50 import ResNet50
 from keras.engine.training import Model
 from keras.preprocessing.image import ImageDataGenerator, load_img, \
-    img_to_array, NumpyArrayIterator
+    img_to_array
 from keras.utils.np_utils import to_categorical
 from nltk import bigrams
 import numpy as np
 from numpy.ma.core import argmax
-import sys
 
 class ResNet50Data:
     def convert(self, paths):
@@ -160,7 +159,6 @@ class MouthData:
         image_data_generator = ImageDataGenerator(rotation_range=.05, zoom_range=.02, horizontal_flip=True)
         vectors = self.by_sentence(np.array(self.annotation_vectors()))
         while True:
-            # mini_batch = ([], []) # X, Y
             images = self.frames_by_sentence()
             for x, y in zip(images, vectors):
                 idg_batch = image_data_generator.flow(x, y, batch_size=156)
@@ -168,39 +166,3 @@ class MouthData:
                 # each item is a sentence (156 images).
                 yield (np.array([x for x, y in idg_batch]),
                     np.array([y for x, y in idg_batch]))
-                #initialise x, y
-                # for i, (idg_x, idg_y) in enumerate(zip(*idg_batch)):
-                    # x.append(image)
-                    # y.append(self.labels_to_vector(labels))
-                    # pad x, y to get the max sentence size
-                    # mini_batch[0].append(x)
-                    # mini_batch[1].append(y)
-                    # if len(mini_batch[1]) == batch_size:
-                # maybe shuffle the minibatch but I don’t have shuffle in this code
-                # yield (np.concatenate(mini_batch[0]), np.concatenate(mini_batch[1]))
-                # mini_batch = ([], [])
-
-        # this is outside of all loops to empty the leftovers less in the mini_batch
-        # if len(mini_batch) > 0:
-        #     yield np.concatenate(mini_batch)
-
-'''
-class ImageDataResnetGenerator(ImageDataGenerator):
-    """An Image Data Generator that also runs images through ResNet."""
-
-    def __init__(self, model):
-        # self.image_data_generator = image_data_generator
-        self.model = model
-
-    def flow(self, *args):
-        it = super().flow(*args)
-        return ResnetIterator(it)
-
-class ResnetIterator(NumpyArrayIterator):
-    def
-
-
-if __name__ == '__main__':
-    data = MouthData()
-    frames_data = data.frames_resnet()
-'''
