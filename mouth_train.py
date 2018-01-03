@@ -52,9 +52,11 @@ def train_evaluate_model():
 
     # Train model.
     print('Creating NN model')
-    K.set_learning_phase(0)  # Needed for unclear reason.
+    # Need to call set_learning_phase() to fix "You must feed a value for
+    # placeholder tensor" error (depends on Tensorflow version?)
+    K.set_learning_phase(0)
     model = create_model(data.pad)
-    K.set_learning_phase(1)  # Needed for unclear reason.
+    K.set_learning_phase(1)
     print('Begin training')
     batch_size = 5
     model.fit_generator(data.data_generator(batch_size), len(data) / batch_size,
