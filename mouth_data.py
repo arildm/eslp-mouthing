@@ -20,7 +20,7 @@ class ResNet50Data:
         print('Loading images from {0} paths'.format(len(paths)))
 
         #results = []
-        for index in range(2**14, len(paths), 2**14):
+        for index in range(2**12, len(paths), 2**12):
             print('Loading images')
             img_arrays = [img_to_array(load_img(path, target_size=(224,224))) for path in paths[:index]]
             images = preprocess_input(np.array(img_arrays))
