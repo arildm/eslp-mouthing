@@ -1,3 +1,5 @@
+from fnmatch import fnmatch
+from itertools import chain
 import os
 
 from keras.applications.imagenet_utils import preprocess_input
@@ -5,12 +7,11 @@ from keras.applications.resnet50 import ResNet50
 from keras.engine.training import Model
 from keras.preprocessing.image import load_img, img_to_array
 from keras.utils.np_utils import to_categorical
-from nltk import bigrams
 import numpy as np
 from numpy.ma.core import argmax
 
 class ResNet50Data:
-    def convert(self, paths, data_filename):
+    def convert(self, paths, data_filename='resnet-data-{}.npy'):
         print('Loading ResNet50')
         self.resnet = ResNet50(weights='imagenet', include_top=False)
         # Discard last pooling & activation layer.
@@ -37,15 +38,10 @@ class ResNet50Data:
 
         return
 
-    def lazyload(self, paths, data_filename='resnet-data-{}.npy'):
-        """Creates, or loads previously created, resnet-converted data."""
-        if os.path.exists(data_filename):
-            resnet_data = np.load(data_filename)
-            print('Loaded data of shape {} from {}'.format(resnet_data.shape, data_filename))
-        else:
-            resnet_data = self.convert(paths, data_filename)
-
-        return resnet_data
+    def load(self, data_filename='resnet-data-{}.npy'):
+        # chain is a concatenating generator: ['ABC', 'DEF'] -> 'ABCDEF'
+        return chain.from_iterable(np.load(fn) for fn in os.listdir('.')
+            if fnmatch(fn, data_filename.replace('{}', '*')))
 
 class MouthData:
     """Contains frames input and labels in Keras-friendly formats."""
@@ -92,17 +88,8 @@ class MouthData:
         return len(self.paths)
 
     def frames_resnet(self):
-        """Get ResNet50 representations of frame images."""
-        rel_paths = (self.data_dir + path[2:] for path in self.paths)
-        resnet_data = ResNet50Data()
-        return resnet_data.lazyload(rel_paths)
-
-    def frames_resnet_bigrams(self):
-        """Get ResNet50 representations of frames as bigrams."""
-        frames_data = self.frames_resnet()
-        # Duplicate first element to provide dummy bigram for the first sample.
-        frames_data = np.insert(frames_data, 0, frames_data[0], axis=0)
-        return np.array(list(bigrams(frames_data)))
+        """Generates frame resnet data."""
+        return ResNet50Data().load()
 
     def label_to_onehot(self, label):
         return self.label_onehots[self.id_map[label]]
@@ -138,4 +125,5 @@ class MouthData:
 
 if __name__ == '__main__':
     data = MouthData()
-    frames_data = data.frames_resnet()
+    rel_paths = (data.data_dir + path[2:] for path in data.paths)
+    ResNet50Data().convert(rel_paths)

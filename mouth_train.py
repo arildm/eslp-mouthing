@@ -1,12 +1,25 @@
+from itertools import cycle, repeat
+
 from keras.callbacks import ModelCheckpoint, EarlyStopping
-from keras.layers.core import Activation, Dense, Reshape, Flatten, Lambda
+from keras.layers.core import Activation, Dense, Flatten
 from keras.layers.recurrent import LSTM
 from keras.layers.wrappers import TimeDistributed
 from keras.models import Sequential
-from keras import backend as K
+import mouth_data
 import numpy as np
 
-import mouth_data
+def chunk_pad(gen, chunk_size, in_sizes, paditem):
+    """Splits gen into chunks at indicated points & pads them to equal size."""
+    buf = []
+    i = 0
+    for x in gen:
+        buf.append(x)
+        if len(buf) >= in_sizes[i]:
+            buf += repeat(paditem, chunk_size - len(buf))
+        if len(buf) >= chunk_size:
+            yield buf
+            buf = []
+            i += 1
 
 def create_model():
     """Creates an RNN model for sequential frame data input and label output."""
@@ -25,31 +38,26 @@ def create_model():
     model.summary()
     return model
 
-def get_data():
-    """Prepares input and output data for training."""
-    data = mouth_data.MouthData()
-
-    # Load frames data.
-    frames_data = data.frames_resnet()
-    x = data.by_sentence(frames_data)
-
-    # Load annotations.
-    print('Loading annotations')
-    mouth_annotations = np.array(data.annotation_vectors())
-    y = data.by_sentence(mouth_annotations)
-
-    return x, y
+def get_data(mouth_data):
+    """Generates sentence-wise input & output data indefinitely for training."""
+    xy_gen = zip(mouth_data.frames_resnet(), mouth_data.annotation_vectors())
+    in_sizes = [len(mouth_data.paths_by_sentence[sentid])
+        for sentid in mouth_data.sentences]
+    z = (np.zeros((7, 7, 2048)), np.zeros((40)))
+    xy_sentwise = chunk_pad(xy_gen, 156, in_sizes, z)
+    for sent in cycle(xy_sentwise):
+        yield np.array([x for x, y in sent]), np.array([y for x, y in sent])
 
 def train_evaluate_model():
     """Trains and saves a NN model."""
     # Load data.
-    x, y = get_data()
+    data = mouth_data.MouthData()
 
     # Train model.
     print('Creating NN model')
     model = create_model()
     print('Begin training')
-    model.fit(x, y, epochs=100, batch_size= 4, callbacks=[
+    model.fit_generator(get_data(data), steps_per_epoch=len(data), epochs=100, callbacks=[
         ModelCheckpoint('mouthing-model-{epoch:02d}.hdf5', 'loss', save_best_only=True),
         EarlyStopping('loss', patience=5),
     ])
