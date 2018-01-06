@@ -18,17 +18,17 @@ class ResNet50Data:
 
         paths = list(paths)
         print('Loading images from {0} paths'.format(len(paths)))
-        
+
         #results = []
         for index in range(2**14, len(paths), 2**14):
             print('Loading images')
             img_arrays = [img_to_array(load_img(path, target_size=(224,224))) for path in paths[:index]]
             images = preprocess_input(np.array(img_arrays))
-            
+
             print('Processing images through ResNet50')
             np.save(data_filename.format(index), self.resnet.predict(images))
             #results.append(self.resnet.predict(images))
-            
+
         if len(paths[index:])>0:
             print('Loading images')
             img_arrays = [img_to_array(load_img(path, target_size=(224,224))) for path in paths[index:]]
@@ -37,7 +37,7 @@ class ResNet50Data:
             print('Processing images through ResNet50')
             np.save(data_filename.format(len(paths)), self.resnet.predict(images))
             #results.append(self.resnet.predict(images))
-            
+
         return #np.concatenate(results)
 
     def lazyload(self, paths, data_filename='resnet-data-{}.npy'):
@@ -113,7 +113,7 @@ class MouthData:
         return self.label_onehots[self.id_map[label]]
 
     def vector_to_label(self, vector):
-        # stochastic interpretation of probabilities 
+        # stochastic interpretation of probabilities
         # it takes a sample  with one run, but it can have more
         #vector = np.random.multinomial(1, vector).flatten()
         return list(self.id_map.keys())[list(self.id_map.values()).index(argmax(vector))]

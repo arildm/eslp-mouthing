@@ -12,12 +12,14 @@ def create_model():
     """Creates an RNN model for sequential frame data input and label output."""
     model = Sequential()
     # Flatten 3D to 1D but keep the bigram dimension.
-    #model.add(Reshape((156, 7 * 7 * 2048), input_shape=(156, 7, 7, 2048)))
-    model.add(TimeDistributed(Lambda(lambda x: x[:,2:5,0:3]), input_shape=(156, 7, 7, 2048)))
-    model.add(TimeDistributed(Flatten()))
+    # model.add(TimeDistributed(Lambda(lambda x: x[:,2:5,0:3]), input_shape=(156, 7, 7, 2048)))
+    # model.add(TimeDistributed(Flatten()))
+    model.add(TimeDistributed(Flatten(input_shape=(156, 7, 7, 2048))))
+    # LSTM helps with sequential data.
     model.add(LSTM(32, return_sequences=True))
     # Output layer the size of the number of labels.
     model.add(TimeDistributed(Dense(40)))
+    # Softmax and categorical cross entropy are good for classification.
     model.add(Activation('softmax'))
     model.compile('adam', 'categorical_crossentropy', ['accuracy'])
     model.summary()
