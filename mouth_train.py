@@ -8,6 +8,16 @@ from keras.models import Sequential
 import mouth_data
 import numpy as np
 
+def chunk(gen, size):
+    """Yields a list of size elements from gen at a time."""
+    buf = []
+    for x in gen:
+        buf.append(x)
+        if len(buf) >= size:
+            yield buf
+            buf = []
+    yield buf
+
 def chunk_pad(gen, chunk_size, in_sizes, paditem):
     """Splits gen into chunks at indicated points & pads them to equal size."""
     buf = []
@@ -27,7 +37,7 @@ def create_model():
     # Flatten 3D to 1D but keep the bigram dimension.
     # model.add(TimeDistributed(Lambda(lambda x: x[:,2:5,0:3]), input_shape=(156, 7, 7, 2048)))
     # model.add(TimeDistributed(Flatten()))
-    model.add(TimeDistributed(Flatten(input_shape=(156, 7, 7, 2048))))
+    model.add(TimeDistributed(Flatten(), input_shape=(156, 7, 7, 2048)))
     # LSTM helps with sequential data.
     model.add(LSTM(32, return_sequences=True))
     # Output layer the size of the number of labels.
@@ -38,15 +48,20 @@ def create_model():
     model.summary()
     return model
 
-def get_data(mouth_data):
-    """Generates sentence-wise input & output data indefinitely for training."""
+def get_data(mouth_data, batch_size):
+    """Generates sentence-wise input & output data batches, indefinitely."""
     xy_gen = zip(mouth_data.frames_resnet(), mouth_data.annotation_vectors())
     in_sizes = [len(mouth_data.paths_by_sentence[sentid])
         for sentid in mouth_data.sentences]
     z = (np.zeros((7, 7, 2048)), np.zeros((40)))
     xy_sentwise = chunk_pad(xy_gen, 156, in_sizes, z)
-    for sent in cycle(xy_sentwise):
-        yield np.array([x for x, y in sent]), np.array([y for x, y in sent])
+    for sents in chunk(cycle(xy_sentwise), batch_size):
+        xout = []
+        yout = []
+        for sent in sents:
+            xout.append([x for x, y in sent])
+            yout.append([y for x, y in sent])
+        yield np.array(xout), np.array(yout)
 
 def train_evaluate_model():
     """Trains and saves a NN model."""
@@ -57,7 +72,7 @@ def train_evaluate_model():
     print('Creating NN model')
     model = create_model()
     print('Begin training')
-    model.fit_generator(get_data(data), steps_per_epoch=len(data), epochs=100, callbacks=[
+    model.fit_generator(get_data(data, 5), steps_per_epoch=len(data), epochs=100, callbacks=[
         ModelCheckpoint('mouthing-model-{epoch:02d}.hdf5', 'loss', save_best_only=True),
         EarlyStopping('loss', patience=5),
     ])
