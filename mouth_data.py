@@ -19,7 +19,6 @@ class ResNet50Data:
         paths = list(paths)
         print('Loading images from {0} paths'.format(len(paths)))
 
-        #results = []
         for index in range(2**12, len(paths), 2**12):
             print('Loading images')
             img_arrays = [img_to_array(load_img(path, target_size=(224,224))) for path in paths[:index]]
@@ -27,7 +26,6 @@ class ResNet50Data:
 
             print('Processing images through ResNet50')
             np.save(data_filename.format(index), self.resnet.predict(images))
-            #results.append(self.resnet.predict(images))
 
         if len(paths[index:])>0:
             print('Loading images')
@@ -36,9 +34,8 @@ class ResNet50Data:
 
             print('Processing images through ResNet50')
             np.save(data_filename.format(len(paths)), self.resnet.predict(images))
-            #results.append(self.resnet.predict(images))
 
-        return #np.concatenate(results)
+        return
 
     def lazyload(self, paths, data_filename='resnet-data-{}.npy'):
         """Creates, or loads previously created, resnet-converted data."""
@@ -47,8 +44,6 @@ class ResNet50Data:
             print('Loaded data of shape {} from {}'.format(resnet_data.shape, data_filename))
         else:
             resnet_data = self.convert(paths, data_filename)
-            #print('Saving data of shape {} to {}'.format(resnet_data.shape, data_filename))
-            #np.save(data_filename, resnet_data)
 
         return resnet_data
 
