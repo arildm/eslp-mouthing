@@ -66,7 +66,7 @@ def get_data(mouth_data, batch_size):
 def train_evaluate_model():
     """Trains and saves a NN model."""
     # Load data.
-    data = mouth_data.MouthData()
+    data = mouth_data.MouthData(annotations_fn='mouthing.annotations2')
 
     # Train model.
     print('Creating NN model')

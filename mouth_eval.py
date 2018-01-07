@@ -15,18 +15,18 @@ if __name__ == '__main__':
     print('Loading model')
     model = load_model(args.model_file)
 
-    # Load data.
-    data = MouthData()
-    x, y = get_data()
+    # Load gold data inputs.
+    data = MouthData(annotations_fn='mouthing.annotations2gold')
+    inputs_gen = (a for a, b in get_data(data, 5))
 
     print('Classifying')
     predicted_labels = []
-    for i in range(len(x)):
-        prediction = model.predict(np.array([x[i]]))
-        sentlen = len(data.paths_by_sentence[data.sentences[i]])
-        predicted_labels += [data.vector_to_label(vector) for vector in prediction[0][:sentlen]]
-        sys.stdout.write('.')
-        sys.stdout.flush()
+    prediction = model.predict_generator(inputs_gen,
+        steps=len(data.sentences), verbose=1)
+    for i, sentid in enumerate(data.sentences):
+        sentlen = len(data.paths_by_sentence[sentid])
+        predicted_labels += [data.vector_to_label(vector)
+            for vector in prediction[i][:sentlen]]
 
     hypotheses_filename = 'hypotheses.txt'
     print('\nSaving results to {}'.format(hypotheses_filename))

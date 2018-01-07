@@ -45,13 +45,14 @@ class ResNet50Data:
 
 class MouthData:
     """Contains frames input and labels in Keras-friendly formats."""
-    def __init__(self, data_dir='phoenix-mouthing-ECCV', limit=None):
+    def __init__(self, data_dir='phoenix-mouthing-ECCV', limit=None,
+            annotations_fn ='mouthing.annotations'):
         self.data_dir = data_dir
 
         # Load annotations.
         self.annotations = []
         self.paths = []
-        with open(self.data_dir + '/annotations/mouthing.annotations2') as annotations_file:
+        with open(self.data_dir + '/annotations/' + annotations_fn) as annotations_file:
             lines = annotations_file.read().splitlines()
             for line in lines:
                 path, labels_all = line.split(' ')
@@ -83,6 +84,9 @@ class MouthData:
 
         # Create list of one-hot vectors (as a list, it "maps" ids to vectors).
         self.label_onehots = to_categorical(sorted(self.id_map.values()))
+
+        print('Loaded annotations for {} frames in {} sentences'
+            .format(len(self), len(self.sentences)))
 
     def __len__(self):
         return len(self.paths)
@@ -124,6 +128,6 @@ class MouthData:
         return np.array(sents)
 
 if __name__ == '__main__':
-    data = MouthData()
+    data = MouthData(annotations_fn='mouthing.annotations2')
     rel_paths = (data.data_dir + path[2:] for path in data.paths)
     ResNet50Data().convert(rel_paths)
