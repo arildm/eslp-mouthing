@@ -11,7 +11,11 @@ Download and extract the mouthing archive (162 MB).
 
     curl ftp://wasserstoff.informatik.rwth-aachen.de/pub/rwth-phoenix/2016/phoenix-mouthing-ECCV.tar.gz | tar xz
 
-Run frames through ResNet50 and save 7x7x2048 data as a npy file.
+Extend dataset with variations of frames. This will create subdirectories of images and extra annotation files in the dataset folder.
+
+    python3 facecropping-data-augmentation.py
+
+Run frames through ResNet50 and save 7x7x2048 data chunks as npy files.
 
     python3 mouth_data.py
 
@@ -26,9 +30,8 @@ Run classification and write hypotheses file.
 Evaluate using Koller's eval script (Python 2).
 
     cd phoenix-mouthing-ECCV
-    python2 evaluation/eval.py annotations/mouthing.annotations ../hypotheses.txt
+    python2 evaluation/eval.py annotations/mouthing.annotations2gold ../hypotheses.txt
 
 ## Results
 
-    Precision: 38.6554621849 Recall: 2.48514316586 Evaluated 3687 frames
-
+To be done :)
