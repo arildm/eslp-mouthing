@@ -72,8 +72,10 @@ def train_evaluate_model():
     print('Creating NN model')
     model = create_model()
     print('Begin training')
-    model.fit_generator(get_data(data, 5), steps_per_epoch=len(data.sentences), epochs=100, callbacks=[
-        ModelCheckpoint('mouthing-model2-{epoch:02d}.hdf5', 'loss', save_best_only=True),
+    batch_size = 50
+    model.fit_generator(get_data(data, batch_size),
+        steps_per_epoch=int(len(data.sentences) / batch_size), epochs=100, callbacks=[
+        ModelCheckpoint('mouthing-model-{epoch:02d}.hdf5', 'loss', save_best_only=True),
         EarlyStopping('loss', patience=5),
     ])
 
