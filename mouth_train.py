@@ -4,9 +4,10 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.layers.core import Activation, Dense, Flatten
 from keras.layers.recurrent import LSTM
 from keras.layers.wrappers import TimeDistributed
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 import mouth_data
 import numpy as np
+import sys
 
 def chunk(gen, size):
     """Yields a list of size elements from gen at a time."""
@@ -63,21 +64,33 @@ def get_data(mouth_data, batch_size):
             yout.append([y for x, y in sent])
         yield np.array(xout), np.array(yout)
 
-def train_evaluate_model():
+def train_evaluate_model(modelfn=None, epoch=None):
     """Trains and saves a NN model."""
     # Load data.
     data = mouth_data.MouthData(annotations_fn='mouthing.annotations2')
 
+    # Load/create model.
+    if modelfn:
+        print('Loading NN model from {}'.format(modelfn))
+        model = load_model(modelfn)
+    else:
+        print('Creating NN model')
+        model = create_model()
+
     # Train model.
-    print('Creating NN model')
-    model = create_model()
     print('Begin training')
     batch_size = 50
-    model.fit_generator(get_data(data, batch_size),
-        steps_per_epoch=int(len(data.sentences) / batch_size), epochs=100, callbacks=[
+    initial_epoch = int(epoch) if epoch else 0
+    callbacks = [
         ModelCheckpoint('mouthing-model-{epoch:02d}.hdf5', 'loss', save_best_only=True),
         EarlyStopping('loss', patience=5),
-    ])
+    ]
+    model.fit_generator(get_data(data, batch_size),
+        steps_per_epoch=int(len(data.sentences) / batch_size),
+        epochs=initial_epoch + 100, callbacks=callbacks,
+        initial_epoch=initial_epoch)
 
 if __name__ == '__main__':
-    train_evaluate_model()
+    # Usage: mouth_train.py [<model> [<initial epoch>]]
+    modelfn, initial_epoch = (sys.argv + 2 * [None])[1:3]
+    train_evaluate_model(modelfn, initial_epoch)
