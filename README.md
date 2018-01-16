@@ -34,11 +34,21 @@ Evaluate using Koller's eval script (Python 2).
 
 ## Models
 
-The repo contains three models M1, M2 and M3.
-There are git tags for m1 and m2 while M3 lives in master.
+The project contains three models: M1, M2 and M3.
+There are git tags for the code for m1 and m2.
+M3 lives in master.
 The models have been trained and tested.
 Trained models are too big for Git,
-but hypothesis files have been written and renamed to m?.txt.
+but model test output files (hypothesis files)
+have been written to m?.txt.
+A helper script phoenix-eval.py can be used to evaluate these,
+automating the final step above.
 
 ## Results
 
+          | Standard              | No garbage
+    Model | Precision    | Recall | Precision  | Recall
+    ---   | ---          | ---    | ---        | ---
+    M1    | 19.4         | 12.7   | 20.6       | 12.2
+    M2    | 68.7         | 62.8   | 67.8       | 60.2
+    M3    | 43.5         | 10.4   | 43.0       | 9.9
