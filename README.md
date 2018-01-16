@@ -32,6 +32,13 @@ Evaluate using Koller's eval script (Python 2).
     cd phoenix-mouthing-ECCV
     python2 evaluation/eval.py annotations/mouthing.annotations2gold ../hypotheses.txt
 
+## Models
+
+The repo contains three models M1, M2 and M3.
+There are git tags for m1 and m2 while M3 lives in master.
+The models have been trained and tested.
+Trained models are too big for Git,
+but hypothesis files have been written and renamed to m?.txt.
+
 ## Results
 
-To be done :)
