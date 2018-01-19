@@ -20,6 +20,8 @@ class ResNet50Data:
         paths = list(paths)
         print('Loading images from {0} paths'.format(len(paths)))
 
+        # Division of work: Mehdi implemented saving chunk-wise npy files
+        # because the size exploded with data augmentation.
         for index in range(2**12, len(paths), 2**12):
             print('Loading images')
             img_arrays = [img_to_array(load_img(path, target_size=(224,224))) for path in paths[:index]]
@@ -99,6 +101,8 @@ class MouthData:
         return self.label_onehots[self.id_map[label]]
 
     def vector_to_label(self, vector):
+        # Division of work: Mehdi tried the stochastic distribution below, then
+        # commented it out. I'm not sure if it helped, we didn't discuss it.
         # stochastic interpretation of probabilities
         # it takes a sample  with one run, but it can have more
         #vector = np.random.multinomial(1, vector).flatten()

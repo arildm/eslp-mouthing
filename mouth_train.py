@@ -36,6 +36,7 @@ def create_model():
     """Creates an RNN model for sequential frame data input and label output."""
     model = Sequential()
     # Flatten 3D to 1D but keep the bigram dimension.
+    # Division of work: Mehdi came up with and implemented Keras-level cropping.
     # model.add(TimeDistributed(Lambda(lambda x: x[:,2:5,0:3]), input_shape=(156, 7, 7, 2048)))
     # model.add(TimeDistributed(Flatten()))
     model.add(TimeDistributed(Flatten(), input_shape=(156, 7, 7, 2048)))
